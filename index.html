@@ -1,45 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Chat</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💬 Simple Chat</title>
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+    }
+
+    body {
+        margin: 0;
+        background: linear-gradient(135deg, #c9eaff, #f1f8ff);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    .chat-container {
+        width: 400px;
+        max-width: 90%;
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chat-header {
+        background: #007bff;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
+    #chat {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        height: 300px;
+        background: #f9f9f9;
+        border-bottom: 1px solid #ddd;
+    }
+
+    #chat p {
+        margin: 8px 0;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #e9f3ff;
+        color: #333;
+        width: fit-content;
+        max-width: 80%;
+    }
+
+    #chat p.self {
+        background: #007bff;
+        color: white;
+        margin-left: auto;
+    }
+
+    .input-area {
+        display: flex;
+        padding: 10px;
+        background: #f5f5f5;
+        border-top: 1px solid #ddd;
+    }
+
+    #msg {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        outline: none;
+        font-size: 1em;
+    }
+
+    button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        margin-left: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    button:hover {
+        background: #0056b3;
+    }
+</style>
 </head>
 <body>
-    <h2>💬 Simple Chat</h2>
-    <div id="chat"></div>
+    <div class="chat-container">
+        <div class="chat-header">💬 Simple Chat</div>
+        <div id="chat"></div>
 
-    <input type="text" id="msg" placeholder="Type a message..." />
-    <button onclick="sendMsg()">Send</button>
+        <div class="input-area">
+            <input type="text" id="msg" placeholder="Type a message..." autocomplete="off" />
+            <button onclick="sendMsg()">Send</button>
+        </div>
+    </div>
 
-    <script>
-        const ws = new WebSocket('ws://localhost:8000');
+<script>
+    const ws = new WebSocket('ws://localhost:8000');
+    const chatDiv = document.getElementById('chat');
+    let myId = null;
 
-        ws.onopen = () => console.log("✅ Connected to WebSocket server");
-        ws.onclose = () => console.log("❌ Disconnected from server");
-        ws.onerror = (e) => console.error("⚠️ WebSocket error:", e);
+    ws.onopen = () => console.log("✅ Connected to WebSocket server");
+    ws.onclose = () => console.log("❌ Disconnected from server");
+    ws.onerror = (e) => console.error("⚠️ WebSocket error:", e);
 
-        ws.onmessage = (event) => {
-            const div = document.getElementById('chat');
-            div.innerHTML += "<p>" + event.data + "</p>";
-            div.scrollTop = div.scrollHeight; // 自动滚动到底部
-        };
-
-        function sendMsg() {
-            const msgInput = document.getElementById("msg");
-            const msg = msgInput.value.trim();
-            if (msg && ws.readyState === WebSocket.OPEN) {
-                ws.send(msg);
-                msgInput.value = "";
-            } else if (ws.readyState !== WebSocket.OPEN) {
-                alert("⚠️ WebSocket not connected yet!");
-            }
+    ws.onmessage = (event) => {
+        // 如果消息包含自己的 ID
+        if (event.data.startsWith("Client")) {
+            const msg = event.data;
+            const div = document.createElement("p");
+            div.textContent = msg;
+            // 判断是否是自己发的
+            if (msg.includes(myId)) div.classList.add("self");
+            chatDiv.appendChild(div);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        } else if (event.data.includes("connection")) {
+            console.log(event.data);
         }
+    };
 
-        // 按 Enter 键发送
-        document.getElementById('msg').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMsg();
-        });
-    </script>
+    function sendMsg() {
+        const msgInput = document.getElementById("msg");
+        const msg = msgInput.value.trim();
+        if (msg && ws.readyState === WebSocket.OPEN) {
+            ws.send(msg);
+            msgInput.value = "";
+        } else if (ws.readyState !== WebSocket.OPEN) {
+            alert("⚠️ WebSocket not connected yet!");
+        }
+    }
+
+    // Enter 键发送
+    document.getElementById('msg').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMsg();
+    });
+</script>
 </body>
 </html>
