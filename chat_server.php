@@ -21,14 +21,14 @@ class ChatServer implements MessageComponentInterface {
 
     // 当客户端发送消息时触发
     public function onMessage(ConnectionInterface $from, $msg) {
-        foreach ($this->clients as $client) {
-            if ($from !== $client) {
-                $client->send($msg);
-            }
-        }
-        echo "Message from {$from->resourceId}: $msg\n";
-    }
+        $numRecv = count($this->clients) - 1;
+        echo "💬 Message from client {$from->resourceId}: $msg ({$numRecv} other clients)\n";
 
+        foreach ($this->clients as $client) {
+        // 把消息发给所有客户端，包括自己
+        $client->send("Client {$from->resourceId}: $msg");
+    }
+}
     // 当客户端断开连接时触发
     public function onClose(ConnectionInterface $conn) {
         $this->clients->detach($conn);
@@ -42,13 +42,18 @@ class ChatServer implements MessageComponentInterface {
     }
 }
 
-$server = \Ratchet\Server\IoServer::factory(
-        new \Ratchet\Http\HttpServer(
-            new \Ratchet\WebSocket\WsServer(
-                new ChatServer()
+use Ratchet\Server\IoServer;
+use Ratchet\Http\HttpServer;
+use Ratchet\WebSocket\WsServer;
+
+// ✅ 移除多余的逗号
+$server = IoServer::factory(
+    new HttpServer(
+        new WsServer(
+            new ChatServer()
         )
     ),
-    8080,
+    8000
 );
 
 $server->run();

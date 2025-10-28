@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat</title>
+</head>
+<body>
+    <h2>💬 Simple Chat</h2>
+    <div id="chat"></div>
+
+    <input type="text" id="msg" placeholder="Type a message..." />
+    <button onclick="sendMsg()">Send</button>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:8000');
+
+        ws.onopen = () => console.log("✅ Connected to WebSocket server");
+        ws.onclose = () => console.log("❌ Disconnected from server");
+        ws.onerror = (e) => console.error("⚠️ WebSocket error:", e);
+
+        ws.onmessage = (event) => {
+            const div = document.getElementById('chat');
+            div.innerHTML += "<p>" + event.data + "</p>";
+            div.scrollTop = div.scrollHeight; // 自动滚动到底部
+        };
+
+        function sendMsg() {
+            const msgInput = document.getElementById("msg");
+            const msg = msgInput.value.trim();
+            if (msg && ws.readyState === WebSocket.OPEN) {
+                ws.send(msg);
+                msgInput.value = "";
+            } else if (ws.readyState !== WebSocket.OPEN) {
+                alert("⚠️ WebSocket not connected yet!");
+            }
+        }
+
+        // 按 Enter 键发送
+        document.getElementById('msg').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMsg();
+        });
+    </script>
+</body>
+</html>
